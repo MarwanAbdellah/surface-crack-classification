@@ -1,0 +1,8 @@
+{
+  "lr": 0.000372619541375375,
+  "weight_decay": 6.766893267235256e-06,
+  "dropout": 0.3251721106544003,
+  "batch_size": 32,
+  "hidden_size": 256,
+  "num_layers": 2
+}
