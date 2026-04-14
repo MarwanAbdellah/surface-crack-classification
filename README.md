@@ -15,6 +15,8 @@
 | RNN (LSTM) | 73 %     | 0.67       | 0.78           | 0.4849   |
 | **CNN** | **80 %**  | **0.77**   | **0.81**       | **0.3725** |
 
+> **Note on misclassification:** Across all architectures, the **Cracked class is consistently harder to classify** than Non-Cracked. This is a direct consequence of microcracks — hairline fractures whose visual signature is nearly indistinguishable from normal surface texture. Models tend to predict Non-Cracked when in doubt, driving Cracked recall down (49 % FFNN → 53 % RNN → 70 % CNN) while Non-Cracked recall stays high. The image data itself is the bottleneck; architectural improvements alone cannot fully overcome the ambiguity introduced by low-contrast microcracks.
+
 ---
 
 ## Dataset
