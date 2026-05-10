@@ -40,6 +40,20 @@ import torch
 from torch.utils.data import DataLoader, Subset
 
 
+def _make_optimizer(name: str, params, lr: float, weight_decay: float):
+    if name == 'adam':    return torch.optim.Adam(params, lr=lr, weight_decay=weight_decay)
+    if name == 'sgd':     return torch.optim.SGD(params, lr=lr, weight_decay=weight_decay, momentum=0.9)
+    if name == 'rmsprop': return torch.optim.RMSprop(params, lr=lr, weight_decay=weight_decay)
+    raise ValueError(f"Unknown optimizer: {name!r}")
+
+
+def _make_scheduler(name: str, optimizer, epochs: int):
+    if name == 'plateau': return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
+    if name == 'cosine':  return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+    if name == 'step':    return torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    raise ValueError(f"Unknown scheduler: {name!r}")
+
+
 def _suggest(trial: optuna.Trial, name: str, spec: tuple):
     kind = spec[0]
     if kind == 'log_float':
@@ -69,7 +83,8 @@ def run_search(
     n_trials: int = 30,
     epochs: int = 50,
     patience: int = 5,
-    train_frac: float = 0.3,
+    train_frac: float = 0.25,
+    val_frac: float = 0.25,
     results_path: str | Path | None = None,
     device: str | torch.device | None = None,
 ) -> tuple[dict, dict]:
@@ -85,7 +100,9 @@ def run_search(
         n_trials:      Number of Optuna trials.
         epochs:        Max epochs per trial (keep low — early stopping handles the rest).
         patience:      Early-stopping patience per trial.
-        train_frac:    Fraction of training data used per search (default 0.3). CrackDataset keeps everything in RAM already, so this just subsets the indices.
+        train_frac:    Fraction of training data used per trial (default 0.25).
+        val_frac:      Fraction of validation data used per trial (default 0.25).
+                       Both subsets are drawn once and reused across all trials for comparability.
         results_path:  If given, saves best params as JSON to this path.
         device:        Torch device. Defaults to CUDA if available.
 
@@ -100,19 +117,24 @@ def run_search(
     num_classes = len(classes)
     trial_histories: dict = {}
 
-    # Take a 30% random subset of training data for search — data is already in
-    # RAM via CrackDataset's eager loading, so no extra copy is needed.
+    # Build fixed train/val subsets once — reused across all trials so they stay comparable.
     train_n = int(len(train_loader.dataset) * train_frac)
     train_indices = torch.randperm(len(train_loader.dataset))[:train_n].tolist()
     search_train = Subset(train_loader.dataset, train_indices)
+
+    val_n = int(len(val_loader.dataset) * val_frac)
+    val_indices = torch.randperm(len(val_loader.dataset))[:val_n].tolist()
+    search_val = Subset(val_loader.dataset, val_indices)
 
     def objective(trial: optuna.Trial) -> float:
         params = {name: _suggest(trial, name, spec) for name, spec in search_space.items()}
         model, optimizer, scheduler, criterion = model_fn(params, num_classes)
 
         batch_size = params.get('batch_size', train_loader.batch_size)
-        subset_loader = DataLoader(search_train, batch_size=batch_size, shuffle=True, num_workers=0)
-        val_subset_loader = DataLoader(val_loader.dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+        subset_loader     = DataLoader(search_train, batch_size=batch_size, shuffle=True,
+                                        num_workers=0, pin_memory=True)
+        val_subset_loader = DataLoader(search_val,   batch_size=batch_size, shuffle=False,
+                                        num_workers=0, pin_memory=True)
 
         print(f"\nTrial {trial.number + 1}/{n_trials} — " +
               ', '.join(f"{k}={v:.2e}" if isinstance(v, float) else f"{k}={v}"
