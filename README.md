@@ -14,9 +14,9 @@
 | FFNN  | 70 %     | 74 %      | 0.67       | 0.78           |
 | RNN (LSTM) | 73 % | 73 %    | 0.67       | 0.78           |
 | CNN   | 80 %     | 80 %      | 0.78       | 0.83           |
-| **Transfer Learning (ResNet18)** | — | **84 %** | **0.83** | **0.84** |
+| **Transfer Learning (ResNet18)** | 84 % | **86 %** | **0.85** | **0.86** |
 
-> **Note on misclassification:** Across all from-scratch architectures, the **Cracked class is consistently harder to classify** than Non-Cracked. This is a direct consequence of microcracks — hairline fractures whose visual signature is nearly indistinguishable from normal surface texture. Models tend to predict Non-Cracked when in doubt, driving Cracked recall down (52 % FFNN → 54 % RNN → 68 % CNN) while Non-Cracked recall stays high. Transfer Learning achieves near-balanced recall (83 % / 84 %) by leveraging pretrained ImageNet features.
+> **Note on misclassification:** Across all from-scratch architectures, the **Cracked class is consistently harder to classify** than Non-Cracked. This is a direct consequence of microcracks — hairline fractures whose visual signature is nearly indistinguishable from normal surface texture. Models tend to predict Non-Cracked when in doubt, driving Cracked recall down (52 % FFNN → 54 % RNN → 68 % CNN) while Non-Cracked recall stays high. Transfer Learning achieves strong recall (81 % Cracked / 90 % Non-Cracked) by leveraging pretrained ImageNet features, improving from 84 % (baseline) to 86 % after hyperparameter tuning.
 
 ---
 
@@ -90,6 +90,8 @@ nn/
 │   │   ├── RNN_Hyperparameter_Training.png
 │   │   └── RNN_Hyperparameter_CM.png
 │   └── Transfer_Learning/
+│       ├── TL_Base_Training.png
+│       ├── TL_Base_CM.png
 │       ├── TL_Hyperparameter_Search.png
 │       ├── TL_Hyperparameter_Training.png
 │       └── TL_Hyperparameter_CM.png
