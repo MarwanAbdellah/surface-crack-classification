@@ -1,6 +1,8 @@
 {
-  "lr": 0.0001181684566433231,
-  "weight_decay": 3.400667132702287e-05,
-  "dropout": 0.21115340724200016,
-  "batch_size": 64
+  "lr": 7.954277656774192e-05,
+  "weight_decay": 0.0033012781483126707,
+  "dropout": 0.3275563157190381,
+  "batch_size": 64,
+  "optimizer": "adam",
+  "scheduler": "step"
 }
